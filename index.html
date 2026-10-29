@@ -318,60 +318,32 @@
     var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
 
     // ── ROSTER LOOKUP ──
-    // Loads any CSV in the data/ folder starting with "employeeList"
-    // CSV format: User ID, Badge Barcode ID
+    // Place roster.csv in data/ folder with format:
+    // User ID,Badge Barcode ID
+    // trocoste,318571
+    // srijankt,11876197
     var roster = {};
-    var rosterLoaded = false;
 
-    function loadRoster() {
-      fetch('data/filelist.json')
-        .then(function(r) { return r.json(); })
-        .then(function(files) {
-          var match = files.find(function(f) { return f.indexOf('employeeList') === 0; });
-          if (match) return fetch('data/' + match);
-          throw new Error('No employeeList file found');
-        })
-        .then(function(r) { return r.text(); })
-        .then(function(text) { parseRoster(text); })
-        .catch(function() {
-          // Fallback: try common filenames directly
-          tryLoadFile([
-            'data/employeeList.csv',
-            'data/employeeList-DPR1.csv',
-            'data/employeeList-DPR1(56).csv'
-          ], 0);
-        });
-    }
-
-    function tryLoadFile(files, index) {
-      if (index >= files.length) {
-        console.log('No roster file found — will display badge numbers');
-        return;
-      }
-      fetch(files[index])
-        .then(function(r) {
-          if (!r.ok) throw new Error('Not found');
-          return r.text();
-        })
-        .then(function(text) { parseRoster(text); })
-        .catch(function() { tryLoadFile(files, index + 1); });
-    }
-
-    function parseRoster(text) {
-      var lines = text.trim().split('\n');
-      for (var i = 1; i < lines.length; i++) {
-        var parts = lines[i].split(',');
-        if (parts.length >= 2) {
-          var alias = parts[0].trim();
-          var badge = parts[1].trim();
-          roster[badge] = alias;
+    fetch('data/roster.csv')
+      .then(function(r) {
+        if (!r.ok) throw new Error('Not found');
+        return r.text();
+      })
+      .then(function(text) {
+        var lines = text.trim().split('\n');
+        for (var i = 1; i < lines.length; i++) {
+          var parts = lines[i].split(',');
+          if (parts.length >= 2) {
+            var alias = parts[0].trim();
+            var badge = parts[1].trim();
+            roster[badge] = alias;
+          }
         }
-      }
-      rosterLoaded = true;
-      console.log('Roster loaded: ' + Object.keys(roster).length + ' employees');
-    }
-
-    loadRoster();
+        console.log('Roster loaded: ' + Object.keys(roster).length + ' employees');
+      })
+      .catch(function() {
+        console.log('No roster found — will display badge numbers');
+      });
 
     function lookupAlias(badge) {
       return roster[badge] || badge;
