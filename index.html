@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>IB Pallet -> Dropzone</title>
+  <title>Inbound Receive</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -18,11 +18,30 @@
       padding: 12px;
     }
 
-    h1 {
-      font-size: 1.2rem;
-      text-align: center;
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 10px;
+    }
+
+    .header h1 {
+      font-size: 1.2rem;
       color: #e0e0e0;
+    }
+
+    .logo-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .logo-btn img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
     }
 
     .screen { display: none; flex-direction: column; flex: 1; }
@@ -46,10 +65,10 @@
       text-align: center;
     }
 
-    .home-btn.receive { background: #0f3460; }
-    .home-btn.receive:active { background: #1a4a7a; }
-    .home-btn.dropzone { background: #e94560; }
-    .home-btn.dropzone:active { background: #ff5a75; }
+    .home-btn.receive { background: #1b9c5a; }
+    .home-btn.receive:active { background: #22b86b; }
+    .home-btn.dropzone { background: #0f3460; }
+    .home-btn.dropzone:active { background: #1a4a7a; }
 
     .home-subtitle {
       font-size: 0.85rem;
@@ -149,15 +168,6 @@
 
     .user-bar .name { color: #1b9c5a; font-weight: bold; }
     .user-bar .trailer-id { color: #f58840; font-weight: bold; }
-    .user-bar button {
-      background: #e94560;
-      color: #fff;
-      border: none;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
 
     .step-indicator {
       display: flex;
@@ -265,9 +275,13 @@
 </head>
 <body>
 
-  <h1>IB Pallet -> Dropzone</h1>
+  <div class="header">
+    <h1>Inbound Receive</h1>
+    <button class="logo-btn" onclick="goHome()" title="Home">
+      <img src="images/nxu9.png" alt="NXU9">
+    </button>
+  </div>
 
-  <!-- ── HOME SCREEN ── -->
   <div class="screen home-screen active" id="homeScreen">
     <button class="home-btn receive" onclick="startMode('receive')">
       📥 Receive
@@ -279,7 +293,6 @@
     </button>
   </div>
 
-  <!-- ── LOGIN SCREEN ── -->
   <div class="screen login-screen" id="loginScreen">
     <div class="mode-label" id="loginModeLabel"></div>
     <div class="badge-icon">[ SCAN BADGE ]</div>
@@ -289,7 +302,6 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
-  <!-- ── TRAILER SCREEN ── -->
   <div class="screen trailer-screen" id="trailerScreen">
     <div class="mode-label receive">📥 Receive</div>
     <p>Scan the transhipment ID</p>
@@ -298,7 +310,6 @@
     <div class="trailer-error" id="trailerError"></div>
   </div>
 
-  <!-- ── SCANNER SCREEN ── -->
   <div class="screen" id="scannerScreen">
 
     <div class="user-bar">
@@ -306,7 +317,6 @@
         <span>User: <span class="name" id="userName"></span></span>
         <span id="trailerDisplay"></span>
       </div>
-      <button onclick="goHome()">Home</button>
     </div>
 
     <div class="step-indicator" id="stepIndicator">
@@ -334,13 +344,10 @@
   </div>
 
   <script>
-    // ── CONFIG ──
     var API_URL = 'https://96a2e921c35de1afbc46731313c6a0.05.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/25/workflows/909703d3b84546168fdd241a2442692f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xNbDYhH_H6KKuStrvucP-jMYK9xmJm69t6qvUzolmMw';
     var OFFLINE_KEY = 'dropzone_offline_queue';
-
     var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
 
-    // ── STATE ──
     var currentMode = '';
     var currentUser = '';
     var currentPallet = '';
@@ -348,7 +355,6 @@
     var scanCount = 0;
     var scanStep = 'pallet';
 
-    // ── ELEMENTS ──
     var badgeInput     = document.getElementById('badgeInput');
     var loginError     = document.getElementById('loginError');
     var trailerInput   = document.getElementById('trailerInput');
@@ -364,7 +370,6 @@
     var stepPallet     = document.getElementById('stepPallet');
     var stepDropzone   = document.getElementById('stepDropzone');
 
-    // ── VALIDATION ──
     function isValidBadge(value) {
       return /^\d+$/.test(value);
     }
@@ -377,7 +382,6 @@
       return value.length >= 11 && !isDropzone(value);
     }
 
-    // ── SCREEN MANAGEMENT ──
     function showScreen(id) {
       var screens = document.querySelectorAll('.screen');
       for (var i = 0; i < screens.length; i++) {
@@ -413,9 +417,14 @@
       showScreen('homeScreen');
     }
 
-    // ── AUTO-FOCUS ──
-    document.addEventListener('click', function() { autoFocus(); });
-    document.addEventListener('touchstart', function() { autoFocus(); });
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
+      autoFocus();
+    });
+    document.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
+      autoFocus();
+    });
     setInterval(autoFocus, 2000);
 
     function autoFocus() {
@@ -428,7 +437,6 @@
       else if (scannerScreen.classList.contains('active')) scanInput.focus();
     }
 
-    // ── BADGE LOGIN ──
     badgeInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -456,7 +464,6 @@
       }
     });
 
-    // ── TRAILER SCAN ──
     trailerInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -475,7 +482,6 @@
       }
     });
 
-    // ── ENTER SCANNER ──
     function enterScanner() {
       scanCount = 0;
       logEl.innerHTML = '';
@@ -496,7 +502,6 @@
       scanInput.focus();
     }
 
-    // ── SCAN HANDLER ──
     scanInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -512,7 +517,6 @@
       }
     });
 
-    // ── RECEIVE MODE ──
     function handleReceiveScan(value) {
       if (isDropzone(value)) {
         setStatus('❌ You are in Receive mode — just scan pallets', 'error');
@@ -535,7 +539,6 @@
       promptCaptured.textContent = '';
     }
 
-    // ── DROPZONE MODE ──
     function handleDropzoneScan(value) {
       if (scanStep === 'pallet') {
         if (isDropzone(value)) {
@@ -581,7 +584,6 @@
       promptCaptured.textContent = 'Pallet: ' + currentPallet;
     }
 
-    // ── SUBMIT ──
     function submitScan(palletId, dropzone) {
       scanCount++;
       scanCountEl.textContent = scanCount + ' scans';
@@ -628,7 +630,6 @@
       }
     }
 
-    // ── OFFLINE QUEUE ──
     function queueOffline(entry) {
       var queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
       queue.push(entry);
@@ -666,7 +667,6 @@
 
     setInterval(flushOffline, 30000);
 
-    // ── UI HELPERS ──
     function setStatus(message, type) {
       statusEl.textContent = message;
       statusEl.className = 'status ' + type;
