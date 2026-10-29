@@ -108,12 +108,6 @@
     .step.active { background: #e94560; color: #fff; }
     .step.done   { background: #1b9c5a; color: #fff; }
 
-    .scan-input-hidden {
-      position: absolute;
-      left: -9999px;
-      opacity: 0;
-    }
-
     .scan-prompt {
       flex: 0 0 auto;
       text-align: center;
@@ -226,10 +220,6 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <input type="text" class="scan-input-hidden" id="scanInput"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      inputmode="none" readonly>
-
     <div class="status ready" id="status">Ready to scan</div>
 
     <div class="log-header">
@@ -241,7 +231,7 @@
 
   <script>
     // ── CONFIG ──
-    var API_URL = 'https://script.google.com/macros/s/AKfycbyxhZ8zzFhv_Yp5K64QpZq4j-VWLK2EIM-qW-a6pO7BPSs1onxnv9XgiD_uYVQHqYg/exec';
+    var API_URL = 'https://96a2e921c35de1afbc46731313c6a0.05.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/25/workflows/909703d3b84546168fdd241a2442692f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xNbDYhH_H6KKuStrvucP-jMYK9xmJm69t6qvUzolmMw';
     var OFFLINE_KEY = 'dropzone_offline_queue';
 
     var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
@@ -256,9 +246,7 @@
     var isLoggedIn = false;
 
     // ── ELEMENTS ──
-    var badgeInput     = document.getElementById('badgeInput');
     var loginError     = document.getElementById('loginError');
-    var scanInput      = document.getElementById('scanInput');
     var statusEl       = document.getElementById('status');
     var logEl          = document.getElementById('log');
     var scanCountEl    = document.getElementById('scanCount');
@@ -405,10 +393,11 @@
 
       fetch(API_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry)
       })
       .then(function(r) {
-        if (r.ok || r.redirected) {
+        if (r.ok || r.status === 202) {
           updateLogEntry(palletId, timestamp, 'sent');
           setStatus('✓ ' + palletId + ' → ' + dropzone, 'success');
         } else {
@@ -439,10 +428,11 @@
       queue.forEach(function(entry) {
         fetch(API_URL, {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entry)
         })
         .then(function(r) {
-          if (r.ok || r.redirected) { sent++; }
+          if (r.ok || r.status === 202) { sent++; }
           else { remaining.push(entry); }
         })
         .catch(function() {
