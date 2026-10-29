@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>IB Dropzone Scanner</title>
+  <title>IB Pallet -> Dropzone</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +25,6 @@
       color: #e0e0e0;
     }
 
-    /* ── Login screen ── */
     .login-screen {
       display: flex;
       flex-direction: column;
@@ -53,11 +52,19 @@
     }
 
     .login-screen .badge-icon {
-      font-size: 3rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1b9c5a;
       margin-bottom: 8px;
     }
 
-    /* ── Scanner screen ── */
+    .login-error {
+      color: #e94560;
+      font-size: 0.85rem;
+      font-weight: bold;
+      min-height: 1.2em;
+    }
+
     .scanner-screen { display: none; flex-direction: column; flex: 1; }
 
     .user-bar {
@@ -82,7 +89,6 @@
       cursor: pointer;
     }
 
-    /* ── Step indicator ── */
     .step-indicator {
       display: flex;
       justify-content: center;
@@ -99,24 +105,15 @@
       color: #555;
     }
 
-    .step.active {
-      background: #e94560;
-      color: #fff;
-    }
+    .step.active { background: #e94560; color: #fff; }
+    .step.done   { background: #1b9c5a; color: #fff; }
 
-    .step.done {
-      background: #1b9c5a;
-      color: #fff;
-    }
-
-    /* ── Scan input (hidden but functional) ── */
     .scan-input-hidden {
       position: absolute;
       left: -9999px;
       opacity: 0;
     }
 
-    /* ── Main display ── */
     .scan-prompt {
       flex: 0 0 auto;
       text-align: center;
@@ -132,10 +129,7 @@
       margin-bottom: 6px;
     }
 
-    .scan-prompt .detail {
-      font-size: 0.9rem;
-      color: #888;
-    }
+    .scan-prompt .detail { font-size: 0.9rem; color: #888; }
 
     .scan-prompt .captured {
       font-size: 1.1rem;
@@ -200,14 +194,16 @@
 </head>
 <body>
 
-  <h1>📦 IB Dropzone Scanner</h1>
+  <h1>IB Pallet -> Dropzone</h1>
 
   <!-- ── LOGIN SCREEN ── -->
   <div class="login-screen" id="loginScreen">
-    <div class="badge-icon">🪪</div>
+    <div class="badge-icon">[ SCAN BADGE ]</div>
     <p>Scan your badge to start</p>
     <input type="text" id="badgeInput" placeholder="Scan badge..."
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      inputmode="none" readonly>
+    <div class="login-error" id="loginError"></div>
   </div>
 
   <!-- ── SCANNER SCREEN ── -->
@@ -218,13 +214,11 @@
       <button onclick="logout()">Switch User</button>
     </div>
 
-    <!-- Step indicator -->
     <div class="step-indicator">
       <div class="step" id="stepPallet">1. Scan Pallet</div>
       <div class="step" id="stepDropzone">2. Scan Dropzone</div>
     </div>
 
-    <!-- Prompt area -->
     <div class="scan-prompt" id="scanPrompt">
       <div class="icon" id="promptIcon">📦</div>
       <div class="instruction" id="promptText">Scan a pallet</div>
@@ -232,9 +226,9 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <!-- Hidden input that captures all scans -->
     <input type="text" class="scan-input-hidden" id="scanInput"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      inputmode="none" readonly>
 
     <div class="status ready" id="status">Ready to scan</div>
 
@@ -250,61 +244,105 @@
     var API_URL = 'https://script.google.com/macros/s/AKfycbyxhZ8zzFhv_Yp5K64QpZq4j-VWLK2EIM-qW-a6pO7BPSs1onxnv9XgiD_uYVQHqYg/exec';
     var OFFLINE_KEY = 'dropzone_offline_queue';
 
-    // Dropzone barcodes — the text your printed barcode labels contain
-    // *** If your barcode labels say something different, change these ***
-    var DROPZONES = {
-      'LIFT': 'LIFT',
-      'CHILLER': 'CHILLER',
-      'FREEZER': 'FREEZER',
-      'HRV': 'HRV'
-    };
+    var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
 
     // ── STATE ──
     var currentUser = '';
     var currentPallet = '';
     var scanCount = 0;
-    var scanStep = 'pallet'; // 'pallet' or 'dropzone'
+    var scanStep = 'pallet';
+    var scanBuffer = '';
+    var badgeBuffer = '';
+    var isLoggedIn = false;
 
     // ── ELEMENTS ──
-    var badgeInput   = document.getElementById('badgeInput');
-    var scanInput    = document.getElementById('scanInput');
-    var statusEl     = document.getElementById('status');
-    var logEl        = document.getElementById('log');
-    var scanCountEl  = document.getElementById('scanCount');
-    var promptIcon   = document.getElementById('promptIcon');
-    var promptText   = document.getElementById('promptText');
-    var promptDetail = document.getElementById('promptDetail');
+    var badgeInput     = document.getElementById('badgeInput');
+    var loginError     = document.getElementById('loginError');
+    var scanInput      = document.getElementById('scanInput');
+    var statusEl       = document.getElementById('status');
+    var logEl          = document.getElementById('log');
+    var scanCountEl    = document.getElementById('scanCount');
+    var promptIcon     = document.getElementById('promptIcon');
+    var promptText     = document.getElementById('promptText');
+    var promptDetail   = document.getElementById('promptDetail');
     var promptCaptured = document.getElementById('promptCaptured');
-    var stepPallet   = document.getElementById('stepPallet');
-    var stepDropzone = document.getElementById('stepDropzone');
+    var stepPallet     = document.getElementById('stepPallet');
+    var stepDropzone   = document.getElementById('stepDropzone');
 
-    // ── AUTO-FOCUS ──
-    function focusBadge() { badgeInput.focus(); }
-    function focusScan()  { scanInput.focus(); }
+    // ── VALIDATION ──
+    function isValidBadge(value) {
+      return /^\d+$/.test(value);
+    }
 
-    document.addEventListener('click', function() {
-      if (currentUser) focusScan(); else focusBadge();
-    });
-    document.addEventListener('touchstart', function() {
-      if (currentUser) focusScan(); else focusBadge();
-    });
-    setInterval(function() {
-      if (currentUser) focusScan(); else focusBadge();
-    }, 2000);
+    function isDropzone(value) {
+      return VALID_DROPZONES.indexOf(value) !== -1;
+    }
 
-    // ── BADGE LOGIN ──
-    badgeInput.addEventListener('keydown', function(e) {
+    function isValidPallet(value) {
+      return value.length >= 11 && !isDropzone(value);
+    }
+
+    // ── GLOBAL KEY LISTENER (no input focus = no keyboard) ──
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'BUTTON') return;
+
       if (e.key === 'Enter') {
         e.preventDefault();
-        var badge = badgeInput.value.trim();
-        if (!badge) return;
 
-        currentUser = badge;
-        document.getElementById('userName').textContent = badge;
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('scannerScreen').style.display = 'flex';
-        setPalletStep();
-        focusScan();
+        if (!isLoggedIn) {
+          var badge = badgeBuffer.trim();
+          badgeBuffer = '';
+
+          if (!badge) return;
+
+          if (!isValidBadge(badge)) {
+            loginError.textContent = '❌ Badge must be numbers only';
+            return;
+          }
+
+          loginError.textContent = '';
+          currentUser = badge;
+          isLoggedIn = true;
+          document.getElementById('userName').textContent = badge;
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('scannerScreen').style.display = 'flex';
+          setPalletStep();
+
+        } else {
+          var value = scanBuffer.trim().toUpperCase();
+          scanBuffer = '';
+
+          if (!value) return;
+
+          if (scanStep === 'pallet') {
+            if (isDropzone(value)) {
+              setStatus('❌ Scan a pallet first, not a dropzone', 'error');
+              return;
+            }
+            if (!isValidPallet(value)) {
+              setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
+              return;
+            }
+            currentPallet = value;
+            setDropzoneStep();
+
+          } else if (scanStep === 'dropzone') {
+            if (!isDropzone(value)) {
+              setStatus('❌ Not a valid dropzone — scan LIFT, CHILLER, FREEZER or HRV', 'error');
+              return;
+            }
+            submitScan(currentPallet, value);
+            currentPallet = '';
+            setPalletStep();
+          }
+        }
+
+      } else if (e.key.length === 1) {
+        if (!isLoggedIn) {
+          badgeBuffer += e.key;
+        } else {
+          scanBuffer += e.key;
+        }
       }
     });
 
@@ -312,44 +350,18 @@
       currentUser = '';
       currentPallet = '';
       scanStep = 'pallet';
+      isLoggedIn = false;
+      badgeBuffer = '';
+      scanBuffer = '';
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('scannerScreen').style.display = 'none';
-      badgeInput.value = '';
-      focusBadge();
+      loginError.textContent = '';
     }
-
-    // ── SCAN HANDLER ──
-    scanInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        var value = scanInput.value.trim().toUpperCase();
-        scanInput.value = '';
-        if (!value) return;
-
-        if (scanStep === 'pallet') {
-          // Check if they accidentally scanned a dropzone first
-          if (DROPZONES[value]) {
-            setStatus('Scan a pallet first!', 'error');
-            return;
-          }
-          currentPallet = value;
-          setDropzoneStep();
-        } else if (scanStep === 'dropzone') {
-          // Check if it's a valid dropzone
-          if (!DROPZONES[value]) {
-            setStatus('Not a dropzone — scan LIFT, CHILLER, FREEZER or HRV', 'error');
-            return;
-          }
-          submitScan(currentPallet, DROPZONES[value]);
-          currentPallet = '';
-          setPalletStep();
-        }
-      }
-    });
 
     // ── STEP UI ──
     function setPalletStep() {
       scanStep = 'pallet';
+      scanBuffer = '';
       stepPallet.className = 'step active';
       stepDropzone.className = 'step';
       promptIcon.textContent = '📦';
@@ -360,6 +372,7 @@
 
     function setDropzoneStep() {
       scanStep = 'dropzone';
+      scanBuffer = '';
       stepPallet.className = 'step done';
       stepDropzone.className = 'step active';
       promptIcon.textContent = '📍';
@@ -483,9 +496,6 @@
     window.addEventListener('offline', function() {
       setStatus('⚠ Offline — scans will be queued', 'offline');
     });
-
-    // ── INIT ──
-    focusBadge();
   </script>
 </body>
 </html>
