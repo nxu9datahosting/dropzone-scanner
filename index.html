@@ -9,11 +9,16 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
+    html, body {
       font-family: 'Noto Sans', Arial, sans-serif;
       background: #1a1a2e;
       color: #fff;
-      height: 100vh;
+      height: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    body {
       display: flex;
       flex-direction: column;
       padding: 12px;
@@ -41,8 +46,6 @@
     .logo-btn img {
       width: 88px;
       height: 88px;
-      border-radius: 50%;
-      object-fit: cover;
     }
 
     .screen { display: none; flex-direction: column; flex: 1; }
@@ -358,6 +361,13 @@
     var promptCaptured = document.getElementById('promptCaptured');
     var stepPallet     = document.getElementById('stepPallet');
     var stepDropzone   = document.getElementById('stepDropzone');
+
+    // Prevent all scrolling except the log
+    document.addEventListener('touchmove', function(e) {
+      if (!e.target.closest('.log')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     function isValidBadge(value) {
       return /^\d+$/.test(value);
