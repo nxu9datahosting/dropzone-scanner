@@ -25,11 +25,9 @@
       color: #e0e0e0;
     }
 
-    /* ── SCREENS ── */
     .screen { display: none; flex-direction: column; flex: 1; }
     .screen.active { display: flex; }
 
-    /* ── HOME SCREEN ── */
     .home-screen {
       justify-content: center;
       align-items: center;
@@ -60,7 +58,6 @@
       margin-top: 4px;
     }
 
-    /* ── LOGIN ── */
     .login-screen {
       justify-content: center;
       align-items: center;
@@ -109,7 +106,6 @@
     .mode-label.receive { background: #0f3460; }
     .mode-label.dropzone { background: #e94560; }
 
-    /* ── RECEIVE: TRAILER SCREEN ── */
     .trailer-screen {
       justify-content: center;
       align-items: center;
@@ -140,7 +136,6 @@
       min-height: 1.2em;
     }
 
-    /* ── SCANNER SCREEN ── */
     .user-bar {
       display: flex;
       justify-content: space-between;
@@ -294,7 +289,7 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
-  <!-- ── TRAILER SCREEN (Receive only) ── -->
+  <!-- ── TRAILER SCREEN ── -->
   <div class="screen trailer-screen" id="trailerScreen">
     <div class="mode-label receive">📥 Receive</div>
     <p>Scan the transhipment ID</p>
@@ -368,7 +363,6 @@
     var promptCaptured = document.getElementById('promptCaptured');
     var stepPallet     = document.getElementById('stepPallet');
     var stepDropzone   = document.getElementById('stepDropzone');
-    var stepIndicator  = document.getElementById('stepIndicator');
 
     // ── VALIDATION ──
     function isValidBadge(value) {
@@ -603,7 +597,8 @@
         palletId: palletId,
         dropzone: dropzone,
         timestamp: timestamp,
-        user: currentUser
+        user: currentUser,
+        trailerId: currentTrailer || ''
       };
 
       addLogEntry(entry, 'pending');
@@ -628,7 +623,6 @@
         setStatus('⚠ Queued offline: ' + palletId, 'offline');
       });
 
-      // Reset for next scan in receive mode
       if (currentMode === 'receive') {
         setReceivePalletStep();
       }
