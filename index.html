@@ -38,8 +38,8 @@
     }
 
     .logo-btn img {
-      width: 44px;
-      height: 44px;
+      width: 88px;
+      height: 88px;
       border-radius: 50%;
       object-fit: cover;
     }
@@ -69,13 +69,6 @@
     .home-btn.receive:active { background: #22b86b; }
     .home-btn.dropzone { background: #0f3460; }
     .home-btn.dropzone:active { background: #1a4a7a; }
-
-    .home-subtitle {
-      font-size: 0.85rem;
-      font-weight: normal;
-      color: #aaa;
-      margin-top: 4px;
-    }
 
     .login-screen {
       justify-content: center;
@@ -122,8 +115,8 @@
       margin-bottom: 8px;
     }
 
-    .mode-label.receive { background: #0f3460; }
-    .mode-label.dropzone { background: #e94560; }
+    .mode-label.receive { background: #1b9c5a; }
+    .mode-label.dropzone { background: #0f3460; }
 
     .trailer-screen {
       justify-content: center;
@@ -185,8 +178,8 @@
       color: #555;
     }
 
-    .step.active { background: #e94560; color: #fff; }
-    .step.active-receive { background: #0f3460; color: #fff; }
+    .step.active { background: #0f3460; color: #fff; }
+    .step.active-receive { background: #1b9c5a; color: #fff; }
     .step.done { background: #1b9c5a; color: #fff; }
 
     .scan-input-hidden {
@@ -283,14 +276,8 @@
   </div>
 
   <div class="screen home-screen active" id="homeScreen">
-    <button class="home-btn receive" onclick="startMode('receive')">
-      📥 Receive
-      <div class="home-subtitle">Scan pallets off a trailer</div>
-    </button>
-    <button class="home-btn dropzone" onclick="startMode('dropzone')">
-      📍 Dropzone
-      <div class="home-subtitle">Scan pallets to dropzones</div>
-    </button>
+    <button class="home-btn receive" onclick="startMode('receive')">📥 Receive</button>
+    <button class="home-btn dropzone" onclick="startMode('dropzone')">📍 Dropzone</button>
   </div>
 
   <div class="screen login-screen" id="loginScreen">
