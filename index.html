@@ -25,12 +25,45 @@
       color: #e0e0e0;
     }
 
-    .login-screen {
-      display: flex;
-      flex-direction: column;
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    /* ── HOME SCREEN ── */
+    .home-screen {
       justify-content: center;
       align-items: center;
-      flex: 1;
+      gap: 20px;
+    }
+
+    .home-btn {
+      width: 80%;
+      padding: 24px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .home-btn.receive { background: #0f3460; }
+    .home-btn.receive:active { background: #1a4a7a; }
+    .home-btn.dropzone { background: #e94560; }
+    .home-btn.dropzone:active { background: #ff5a75; }
+
+    .home-subtitle {
+      font-size: 0.85rem;
+      font-weight: normal;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    /* ── LOGIN ── */
+    .login-screen {
+      justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
@@ -65,8 +98,49 @@
       min-height: 1.2em;
     }
 
-    .scanner-screen { display: none; flex-direction: column; flex: 1; }
+    .mode-label {
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+    }
 
+    .mode-label.receive { background: #0f3460; }
+    .mode-label.dropzone { background: #e94560; }
+
+    /* ── RECEIVE: TRAILER SCREEN ── */
+    .trailer-screen {
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .trailer-screen input {
+      width: 80%;
+      font-size: 1.3rem;
+      padding: 14px;
+      border: 3px solid #0f3460;
+      border-radius: 8px;
+      background: #16213e;
+      color: #fff;
+      text-align: center;
+    }
+
+    .trailer-screen p {
+      color: #888;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .trailer-error {
+      color: #e94560;
+      font-size: 0.85rem;
+      font-weight: bold;
+      min-height: 1.2em;
+    }
+
+    /* ── SCANNER SCREEN ── */
     .user-bar {
       display: flex;
       justify-content: space-between;
@@ -79,6 +153,7 @@
     }
 
     .user-bar .name { color: #1b9c5a; font-weight: bold; }
+    .user-bar .trailer-id { color: #f58840; font-weight: bold; }
     .user-bar button {
       background: #e94560;
       color: #fff;
@@ -106,7 +181,8 @@
     }
 
     .step.active { background: #e94560; color: #fff; }
-    .step.done   { background: #1b9c5a; color: #fff; }
+    .step.active-receive { background: #0f3460; color: #fff; }
+    .step.done { background: #1b9c5a; color: #fff; }
 
     .scan-input-hidden {
       position: absolute;
@@ -196,8 +272,21 @@
 
   <h1>IB Pallet -> Dropzone</h1>
 
+  <!-- ── HOME SCREEN ── -->
+  <div class="screen home-screen active" id="homeScreen">
+    <button class="home-btn receive" onclick="startMode('receive')">
+      📥 Receive
+      <div class="home-subtitle">Scan pallets off a trailer</div>
+    </button>
+    <button class="home-btn dropzone" onclick="startMode('dropzone')">
+      📍 Dropzone
+      <div class="home-subtitle">Scan pallets to dropzones</div>
+    </button>
+  </div>
+
   <!-- ── LOGIN SCREEN ── -->
-  <div class="login-screen" id="loginScreen">
+  <div class="screen login-screen" id="loginScreen">
+    <div class="mode-label" id="loginModeLabel"></div>
     <div class="badge-icon">[ SCAN BADGE ]</div>
     <p>Scan your badge to start</p>
     <input type="text" id="badgeInput" placeholder="Scan badge..."
@@ -205,15 +294,27 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
+  <!-- ── TRAILER SCREEN (Receive only) ── -->
+  <div class="screen trailer-screen" id="trailerScreen">
+    <div class="mode-label receive">📥 Receive</div>
+    <p>Scan the transhipment ID</p>
+    <input type="text" id="trailerInput" placeholder="Scan trailer..."
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="trailer-error" id="trailerError"></div>
+  </div>
+
   <!-- ── SCANNER SCREEN ── -->
-  <div class="scanner-screen" id="scannerScreen">
+  <div class="screen" id="scannerScreen">
 
     <div class="user-bar">
-      <span>User: <span class="name" id="userName"></span></span>
-      <button onclick="logout()">Switch User</button>
+      <div>
+        <span>User: <span class="name" id="userName"></span></span>
+        <span id="trailerDisplay"></span>
+      </div>
+      <button onclick="goHome()">Home</button>
     </div>
 
-    <div class="step-indicator">
+    <div class="step-indicator" id="stepIndicator">
       <div class="step" id="stepPallet">1. Scan Pallet</div>
       <div class="step" id="stepDropzone">2. Scan Dropzone</div>
     </div>
@@ -245,14 +346,18 @@
     var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
 
     // ── STATE ──
+    var currentMode = '';
     var currentUser = '';
     var currentPallet = '';
+    var currentTrailer = '';
     var scanCount = 0;
     var scanStep = 'pallet';
 
     // ── ELEMENTS ──
     var badgeInput     = document.getElementById('badgeInput');
     var loginError     = document.getElementById('loginError');
+    var trailerInput   = document.getElementById('trailerInput');
+    var trailerError   = document.getElementById('trailerError');
     var scanInput      = document.getElementById('scanInput');
     var statusEl       = document.getElementById('status');
     var logEl          = document.getElementById('log');
@@ -263,6 +368,7 @@
     var promptCaptured = document.getElementById('promptCaptured');
     var stepPallet     = document.getElementById('stepPallet');
     var stepDropzone   = document.getElementById('stepDropzone');
+    var stepIndicator  = document.getElementById('stepIndicator');
 
     // ── VALIDATION ──
     function isValidBadge(value) {
@@ -277,19 +383,56 @@
       return value.length >= 11 && !isDropzone(value);
     }
 
-    // ── AUTO-FOCUS ──
-    function focusBadge() { badgeInput.focus(); }
-    function focusScan()  { scanInput.focus(); }
+    // ── SCREEN MANAGEMENT ──
+    function showScreen(id) {
+      var screens = document.querySelectorAll('.screen');
+      for (var i = 0; i < screens.length; i++) {
+        screens[i].classList.remove('active');
+      }
+      document.getElementById(id).classList.add('active');
+    }
 
-    document.addEventListener('click', function() {
-      if (currentUser) focusScan(); else focusBadge();
-    });
-    document.addEventListener('touchstart', function() {
-      if (currentUser) focusScan(); else focusBadge();
-    });
-    setInterval(function() {
-      if (currentUser) focusScan(); else focusBadge();
-    }, 2000);
+    function startMode(mode) {
+      currentMode = mode;
+      var label = document.getElementById('loginModeLabel');
+      if (mode === 'receive') {
+        label.textContent = '📥 Receive';
+        label.className = 'mode-label receive';
+      } else {
+        label.textContent = '📍 Dropzone';
+        label.className = 'mode-label dropzone';
+      }
+      showScreen('loginScreen');
+      badgeInput.value = '';
+      loginError.textContent = '';
+      badgeInput.focus();
+    }
+
+    function goHome() {
+      currentUser = '';
+      currentPallet = '';
+      currentTrailer = '';
+      scanCount = 0;
+      scanStep = 'pallet';
+      logEl.innerHTML = '';
+      scanCountEl.textContent = '0 scans';
+      showScreen('homeScreen');
+    }
+
+    // ── AUTO-FOCUS ──
+    document.addEventListener('click', function() { autoFocus(); });
+    document.addEventListener('touchstart', function() { autoFocus(); });
+    setInterval(autoFocus, 2000);
+
+    function autoFocus() {
+      var loginScreen = document.getElementById('loginScreen');
+      var trailerScreen = document.getElementById('trailerScreen');
+      var scannerScreen = document.getElementById('scannerScreen');
+
+      if (loginScreen.classList.contains('active')) badgeInput.focus();
+      else if (trailerScreen.classList.contains('active')) trailerInput.focus();
+      else if (scannerScreen.classList.contains('active')) scanInput.focus();
+    }
 
     // ── BADGE LOGIN ──
     badgeInput.addEventListener('keydown', function(e) {
@@ -307,22 +450,56 @@
         loginError.textContent = '';
         currentUser = badge;
         document.getElementById('userName').textContent = badge;
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('scannerScreen').style.display = 'flex';
-        setPalletStep();
-        focusScan();
+
+        if (currentMode === 'receive') {
+          showScreen('trailerScreen');
+          trailerInput.value = '';
+          trailerError.textContent = '';
+          trailerInput.focus();
+        } else {
+          enterScanner();
+        }
       }
     });
 
-    function logout() {
-      currentUser = '';
-      currentPallet = '';
-      scanStep = 'pallet';
-      document.getElementById('loginScreen').style.display = 'flex';
-      document.getElementById('scannerScreen').style.display = 'none';
-      badgeInput.value = '';
-      loginError.textContent = '';
-      focusBadge();
+    // ── TRAILER SCAN ──
+    trailerInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var trailer = trailerInput.value.trim().toUpperCase();
+        if (!trailer) return;
+
+        if (trailer.length < 3) {
+          trailerError.textContent = '❌ Invalid transhipment ID';
+          trailerInput.value = '';
+          return;
+        }
+
+        trailerError.textContent = '';
+        currentTrailer = trailer;
+        enterScanner();
+      }
+    });
+
+    // ── ENTER SCANNER ──
+    function enterScanner() {
+      scanCount = 0;
+      logEl.innerHTML = '';
+      scanCountEl.textContent = '0 scans';
+
+      if (currentMode === 'receive') {
+        document.getElementById('trailerDisplay').innerHTML =
+          ' | Trailer: <span class="trailer-id">' + currentTrailer + '</span>';
+        stepDropzone.style.display = 'none';
+        setReceivePalletStep();
+      } else {
+        document.getElementById('trailerDisplay').innerHTML = '';
+        stepDropzone.style.display = '';
+        setPalletStep();
+      }
+
+      showScreen('scannerScreen');
+      scanInput.focus();
     }
 
     // ── SCAN HANDLER ──
@@ -333,34 +510,66 @@
         scanInput.value = '';
         if (!value) return;
 
-        if (scanStep === 'pallet') {
-          if (isDropzone(value)) {
-            setStatus('❌ Scan a pallet first, not a dropzone', 'error');
-            return;
-          }
-          if (!isValidPallet(value)) {
-            setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
-            return;
-          }
-          currentPallet = value;
-          setDropzoneStep();
-
-        } else if (scanStep === 'dropzone') {
-          if (!isDropzone(value)) {
-            setStatus('❌ Not a valid dropzone — scan LIFT, CHILLER, FREEZER or HRV', 'error');
-            return;
-          }
-          submitScan(currentPallet, value);
-          currentPallet = '';
-          setPalletStep();
+        if (currentMode === 'receive') {
+          handleReceiveScan(value);
+        } else {
+          handleDropzoneScan(value);
         }
       }
     });
 
-    // ── STEP UI ──
+    // ── RECEIVE MODE ──
+    function handleReceiveScan(value) {
+      if (isDropzone(value)) {
+        setStatus('❌ You are in Receive mode — just scan pallets', 'error');
+        return;
+      }
+      if (!isValidPallet(value)) {
+        setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
+        return;
+      }
+      submitScan(value, 'RECEIVE');
+    }
+
+    function setReceivePalletStep() {
+      scanStep = 'pallet';
+      stepPallet.className = 'step active-receive';
+      stepPallet.textContent = 'Scan Pallet';
+      promptIcon.textContent = '📥';
+      promptText.textContent = 'Scan a pallet to receive';
+      promptDetail.textContent = 'Trailer: ' + currentTrailer;
+      promptCaptured.textContent = '';
+    }
+
+    // ── DROPZONE MODE ──
+    function handleDropzoneScan(value) {
+      if (scanStep === 'pallet') {
+        if (isDropzone(value)) {
+          setStatus('❌ Scan a pallet first, not a dropzone', 'error');
+          return;
+        }
+        if (!isValidPallet(value)) {
+          setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
+          return;
+        }
+        currentPallet = value;
+        setDropzoneStep();
+
+      } else if (scanStep === 'dropzone') {
+        if (!isDropzone(value)) {
+          setStatus('❌ Not a valid dropzone — scan LIFT, CHILLER, FREEZER or HRV', 'error');
+          return;
+        }
+        submitScan(currentPallet, value);
+        currentPallet = '';
+        setPalletStep();
+      }
+    }
+
     function setPalletStep() {
       scanStep = 'pallet';
       stepPallet.className = 'step active';
+      stepPallet.textContent = '1. Scan Pallet';
       stepDropzone.className = 'step';
       promptIcon.textContent = '📦';
       promptText.textContent = 'Scan a pallet';
@@ -418,6 +627,11 @@
         updateLogEntry(palletId, timestamp, 'failed');
         setStatus('⚠ Queued offline: ' + palletId, 'offline');
       });
+
+      // Reset for next scan in receive mode
+      if (currentMode === 'receive') {
+        setReceivePalletStep();
+      }
     }
 
     // ── OFFLINE QUEUE ──
@@ -495,9 +709,6 @@
     window.addEventListener('offline', function() {
       setStatus('⚠ Offline — scans will be queued', 'offline');
     });
-
-    // ── INIT ──
-    focusBadge();
   </script>
 </body>
 </html>
