@@ -80,18 +80,6 @@
       gap: 12px;
     }
 
-    .login-screen input {
-      width: 80%;
-      font-size: 1.3rem;
-      padding: 14px;
-      border: 3px solid #0f3460;
-      border-radius: 8px;
-      background: #16213e;
-      color: #fff;
-      text-align: center;
-      font-family: 'Noto Sans', Arial, sans-serif;
-    }
-
     .login-screen p {
       color: #888;
       font-size: 0.9rem;
@@ -128,18 +116,6 @@
       gap: 12px;
     }
 
-    .trailer-screen input {
-      width: 80%;
-      font-size: 1.3rem;
-      padding: 14px;
-      border: 3px solid #0f3460;
-      border-radius: 8px;
-      background: #16213e;
-      color: #fff;
-      text-align: center;
-      font-family: 'Noto Sans', Arial, sans-serif;
-    }
-
     .trailer-screen p {
       color: #888;
       font-size: 0.9rem;
@@ -151,6 +127,12 @@
       font-size: 0.85rem;
       font-weight: bold;
       min-height: 1.2em;
+    }
+
+    .hidden-input {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
     }
 
     .user-bar {
@@ -186,12 +168,6 @@
     .step.active { background: #0f3460; color: #fff; }
     .step.active-receive { background: #1b9c5a; color: #fff; }
     .step.done { background: #1b9c5a; color: #fff; }
-
-    .scan-input-hidden {
-      position: absolute;
-      left: -9999px;
-      opacity: 0;
-    }
 
     .scan-prompt {
       flex: 0 0 auto;
@@ -289,7 +265,7 @@
     <div class="mode-label" id="loginModeLabel"></div>
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
     <p>Scan your badge to start</p>
-    <input type="text" id="badgeInput" placeholder="Scan badge..."
+    <input type="text" class="hidden-input" id="badgeInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="login-error" id="loginError"></div>
   </div>
@@ -297,7 +273,7 @@
   <div class="screen trailer-screen" id="trailerScreen">
     <div class="mode-label receive">📥 Receive</div>
     <p>Scan the transhipment ID</p>
-    <input type="text" id="trailerInput" placeholder="Scan trailer..."
+    <input type="text" class="hidden-input" id="trailerInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="trailer-error" id="trailerError"></div>
   </div>
@@ -323,7 +299,7 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <input type="text" class="scan-input-hidden" id="scanInput"
+    <input type="text" class="hidden-input" id="scanInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 
     <div class="status ready" id="status">Ready to scan</div>
