@@ -81,7 +81,7 @@
     }
 
     .login-screen p {
-      color: #888;
+      color: #fff;
       font-size: 0.9rem;
       text-align: center;
     }
@@ -117,7 +117,7 @@
     }
 
     .trailer-screen p {
-      color: #888;
+      color: #fff;
       font-size: 0.9rem;
       text-align: center;
     }
@@ -264,7 +264,7 @@
   <div class="screen login-screen" id="loginScreen">
     <div class="mode-label" id="loginModeLabel"></div>
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
-    <p>Scan your badge to start</p>
+    <p>Scan your badge</p>
     <input type="text" class="hidden-input" id="badgeInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="login-error" id="loginError"></div>
@@ -272,7 +272,8 @@
 
   <div class="screen trailer-screen" id="trailerScreen">
     <div class="mode-label receive">📥 Receive</div>
-    <p>Scan the transhipment ID</p>
+    <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
+    <p>Scan the Transhipment ID</p>
     <input type="text" class="hidden-input" id="trailerInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="trailer-error" id="trailerError"></div>
@@ -446,7 +447,7 @@
         if (!trailer) return;
 
         if (trailer.length < 3) {
-          trailerError.textContent = '❌ Invalid transhipment ID';
+          trailerError.textContent = '❌ Invalid Transhipment ID';
           trailerInput.value = '';
           return;
         }
