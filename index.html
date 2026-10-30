@@ -58,6 +58,8 @@
       border: none;
       cursor: pointer;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
     }
 
     .logo-btn img {
@@ -455,6 +457,10 @@
       return value.length === 11 && value.startsWith('PALLET_') && !isDropzone(value);
     }
 
+    function isValidTrailer(value) {
+      return /^[A-Z0-9]{4}_/.test(value);
+    }
+
     function showScreen(id) {
       var screens = document.querySelectorAll('.screen');
       for (var i = 0; i < screens.length; i++) {
@@ -577,7 +583,7 @@
         trailerInput.value = '';
         if (!trailer) return;
 
-        if (trailer.length < 3) {
+        if (!isValidTrailer(trailer)) {
           trailerError.textContent = '❌ Invalid Transhipment ID';
           return;
         }
