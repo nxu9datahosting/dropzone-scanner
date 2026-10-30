@@ -130,12 +130,6 @@
       min-height: 1.2em;
     }
 
-    .scan-input-hidden {
-      position: absolute;
-      left: -9999px;
-      opacity: 0;
-    }
-
     .user-bar {
       display: flex;
       justify-content: space-between;
@@ -192,6 +186,15 @@
       color: #1b9c5a;
       font-family: monospace;
       margin-top: 8px;
+    }
+
+    .scan-buffer {
+      text-align: center;
+      font-family: monospace;
+      font-size: 1rem;
+      color: #f58840;
+      min-height: 1.5em;
+      margin-bottom: 6px;
     }
 
     .status {
@@ -266,8 +269,7 @@
     <div class="mode-label" id="loginModeLabel"></div>
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
     <p>Scan your badge</p>
-    <input type="text" class="scan-input-hidden" id="badgeInput"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="scan-buffer" id="badgeBuffer"></div>
     <div class="login-error" id="loginError"></div>
   </div>
 
@@ -275,8 +277,7 @@
     <div class="mode-label receive">📥 Receive</div>
     <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
     <p>Scan the Transhipment ID</p>
-    <input type="text" class="scan-input-hidden" id="trailerInput"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="scan-buffer" id="trailerBuffer"></div>
     <div class="trailer-error" id="trailerError"></div>
   </div>
 
@@ -301,8 +302,7 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <input type="text" class="scan-input-hidden" id="scanInput"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="scan-buffer" id="scanBuffer"></div>
 
     <div class="status ready" id="status">Ready to scan</div>
 
@@ -346,6 +346,77 @@
       return roster[badge] || badge;
     }
 
+    // ── SCAN BUFFER ──
+    // All scan input comes through document-level keydown
+    // No <input> elements = no keyboard
+    var scanBuffer = '';
+    var bufferTimeout = null;
+
+    document.addEventListener('keydown', function(e) {
+      // Ignore if on home screen or if a button is focused
+      if (document.getElementById('homeScreen').classList.contains('active')) return;
+      if (e.target.closest('.home-btn') || e.target.closest('.logo-btn')) return;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var value = scanBuffer.trim();
+        scanBuffer = '';
+        clearTimeout(bufferTimeout);
+        updateBufferDisplay('');
+
+        if (!value) return;
+        handleScan(value);
+
+      } else if (e.key === 'Backspace') {
+        scanBuffer = scanBuffer.slice(0, -1);
+        updateBufferDisplay(scanBuffer);
+
+      } else if (e.key.length === 1) {
+        scanBuffer += e.key;
+        updateBufferDisplay(scanBuffer);
+
+        // Auto-clear buffer after 5 seconds of no input (safety net)
+        clearTimeout(bufferTimeout);
+        bufferTimeout = setTimeout(function() {
+          scanBuffer = '';
+          updateBufferDisplay('');
+        }, 5000);
+      }
+    });
+
+    function updateBufferDisplay(value) {
+      var loginScreen = document.getElementById('loginScreen');
+      var trailerScreen = document.getElementById('trailerScreen');
+      var scannerScreen = document.getElementById('scannerScreen');
+
+      if (loginScreen.classList.contains('active')) {
+        document.getElementById('badgeBuffer').textContent = value;
+      } else if (trailerScreen.classList.contains('active')) {
+        document.getElementById('trailerBuffer').textContent = value;
+      } else if (scannerScreen.classList.contains('active')) {
+        document.getElementById('scanBuffer').textContent = value;
+      }
+    }
+
+    function handleScan(value) {
+      var loginScreen = document.getElementById('loginScreen');
+      var trailerScreen = document.getElementById('trailerScreen');
+      var scannerScreen = document.getElementById('scannerScreen');
+
+      if (loginScreen.classList.contains('active')) {
+        handleBadgeScan(value);
+      } else if (trailerScreen.classList.contains('active')) {
+        handleTrailerScan(value);
+      } else if (scannerScreen.classList.contains('active')) {
+        if (currentMode === 'receive') {
+          handleReceiveScan(value.toUpperCase());
+        } else {
+          handleDropzoneScan(value.toUpperCase());
+        }
+      }
+    }
+
+    // ── STATE ──
     var currentMode = '';
     var currentUser = '';
     var currentUserDisplay = '';
@@ -354,11 +425,8 @@
     var scanCount = 0;
     var scanStep = 'pallet';
 
-    var badgeInput     = document.getElementById('badgeInput');
     var loginError     = document.getElementById('loginError');
-    var trailerInput   = document.getElementById('trailerInput');
     var trailerError   = document.getElementById('trailerError');
-    var scanInput      = document.getElementById('scanInput');
     var statusEl       = document.getElementById('status');
     var logEl          = document.getElementById('log');
     var scanCountEl    = document.getElementById('scanCount');
@@ -394,6 +462,9 @@
         screens[i].classList.remove('active');
       }
       document.getElementById(id).classList.add('active');
+      // Clear buffer when switching screens
+      scanBuffer = '';
+      updateBufferDisplay('');
     }
 
     function startMode(mode) {
@@ -407,9 +478,7 @@
         label.className = 'mode-label dropzone';
       }
       showScreen('loginScreen');
-      badgeInput.value = '';
       loginError.textContent = '';
-      badgeInput.focus();
     }
 
     function goHome() {
@@ -424,71 +493,39 @@
       showScreen('homeScreen');
     }
 
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
-      autoFocus();
-    });
-    document.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
-      autoFocus();
-    });
-    setInterval(autoFocus, 2000);
-
-    function autoFocus() {
-      var loginScreen = document.getElementById('loginScreen');
-      var trailerScreen = document.getElementById('trailerScreen');
-      var scannerScreen = document.getElementById('scannerScreen');
-
-      if (loginScreen.classList.contains('active')) badgeInput.focus();
-      else if (trailerScreen.classList.contains('active')) trailerInput.focus();
-      else if (scannerScreen.classList.contains('active')) scanInput.focus();
-    }
-
-    badgeInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        var badge = badgeInput.value.trim();
-        if (!badge) return;
-
-        if (!isValidBadge(badge)) {
-          loginError.textContent = '❌ Badge must be numbers only';
-          badgeInput.value = '';
-          return;
-        }
-
-        loginError.textContent = '';
-        currentUser = badge;
-        currentUserDisplay = lookupAlias(badge);
-        document.getElementById('userName').textContent = currentUserDisplay;
-
-        if (currentMode === 'receive') {
-          showScreen('trailerScreen');
-          trailerInput.value = '';
-          trailerError.textContent = '';
-          trailerInput.focus();
-        } else {
-          enterScanner();
-        }
+    // ── BADGE SCAN ──
+    function handleBadgeScan(value) {
+      if (!isValidBadge(value)) {
+        loginError.textContent = '❌ Badge must be numbers only';
+        return;
       }
-    });
 
-    trailerInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        var trailer = trailerInput.value.trim().toUpperCase();
-        if (!trailer) return;
+      loginError.textContent = '';
+      currentUser = value;
+      currentUserDisplay = lookupAlias(value);
+      document.getElementById('userName').textContent = currentUserDisplay;
 
-        if (trailer.length < 3) {
-          trailerError.textContent = '❌ Invalid Transhipment ID';
-          trailerInput.value = '';
-          return;
-        }
-
+      if (currentMode === 'receive') {
+        showScreen('trailerScreen');
         trailerError.textContent = '';
-        currentTrailer = trailer;
+      } else {
         enterScanner();
       }
-    });
+    }
+
+    // ── TRAILER SCAN ──
+    function handleTrailerScan(value) {
+      var trailer = value.toUpperCase();
+
+      if (trailer.length < 3) {
+        trailerError.textContent = '❌ Invalid Transhipment ID';
+        return;
+      }
+
+      trailerError.textContent = '';
+      currentTrailer = trailer;
+      enterScanner();
+    }
 
     function enterScanner() {
       scanCount = 0;
@@ -507,23 +544,7 @@
       }
 
       showScreen('scannerScreen');
-      scanInput.focus();
     }
-
-    scanInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        var value = scanInput.value.trim().toUpperCase();
-        scanInput.value = '';
-        if (!value) return;
-
-        if (currentMode === 'receive') {
-          handleReceiveScan(value);
-        } else {
-          handleDropzoneScan(value);
-        }
-      }
-    });
 
     function handleReceiveScan(value) {
       if (isDropzone(value)) {
