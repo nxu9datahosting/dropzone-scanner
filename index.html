@@ -9,14 +9,14 @@
   <style>
     @font-face {
       font-family: 'Amazon Ember Display';
-      src: url('fonts/Amazon Ember Display Light.ttf') format('truetype');
+      src: url('fonts/AmazonEmberDisplay-Light.ttf') format('truetype');
       font-weight: 300;
       font-style: normal;
     }
 
     @font-face {
       font-family: 'Amazon Ember Display';
-      src: url('fonts/Amazon Ember Display Medium.ttf') format('truetype');
+      src: url('fonts/AmazonEmberDisplay-Medium.ttf') format('truetype');
       font-weight: 500;
       font-style: normal;
     }
@@ -47,7 +47,7 @@
     }
 
     .header h1 {
-      font-size: 1.2rem;
+      font-size: 1.8rem;
       color: #e0e0e0;
       margin-left: 10%;
       font-weight: 500;
@@ -72,6 +72,7 @@
       justify-content: center;
       align-items: center;
       gap: 20px;
+      position: relative;
     }
 
     .home-btn {
@@ -90,6 +91,35 @@
     .home-btn.receive:active { background: #22b86b; }
     .home-btn.dropzone { background: #0f3460; }
     .home-btn.dropzone:active { background: #1a4a7a; }
+
+    .home-footer {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .home-user {
+      font-size: 0.7rem;
+      color: #fff;
+    }
+
+    .logout-btn {
+      background: #e94560;
+      border: none;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .logout-btn:active {
+      background: #c0392b;
+    }
 
     .login-screen {
       justify-content: center;
@@ -116,21 +146,19 @@
       min-height: 1.2em;
     }
 
-    .mode-label {
+    .trailer-screen {
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .trailer-screen .mode-label {
       font-size: 1rem;
       font-weight: bold;
       padding: 6px 16px;
       border-radius: 20px;
       margin-bottom: 8px;
-    }
-
-    .mode-label.receive { background: #1b9c5a; }
-    .mode-label.dropzone { background: #0f3460; }
-
-    .trailer-screen {
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
+      background: #1b9c5a;
     }
 
     .trailer-screen p {
@@ -275,13 +303,8 @@
     </button>
   </div>
 
-  <div class="screen home-screen active" id="homeScreen">
-    <button class="home-btn receive" onclick="startMode('receive')">📥 Receive</button>
-    <button class="home-btn dropzone" onclick="startMode('dropzone')">📍 Dropzone</button>
-  </div>
-
-  <div class="screen login-screen" id="loginScreen">
-    <div class="mode-label" id="loginModeLabel"></div>
+  <!-- STEP 1: Badge scan (first screen) -->
+  <div class="screen login-screen active" id="loginScreen">
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
     <p>Scan your badge</p>
     <input type="text" class="scan-input-hidden" id="badgeInput"
@@ -289,8 +312,19 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
+  <!-- STEP 2: Choose mode (after badge scan) -->
+  <div class="screen home-screen" id="homeScreen">
+    <button class="home-btn receive" onclick="startMode('receive')">📥 Receive</button>
+    <button class="home-btn dropzone" onclick="startMode('dropzone')">📍 Dropzone</button>
+    <div class="home-footer">
+      <span class="home-user" id="homeUserName"></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 (Receive only): Scan trailer -->
   <div class="screen trailer-screen" id="trailerScreen">
-    <div class="mode-label receive">📥 Receive</div>
+    <div class="mode-label">📥 Receive</div>
     <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
     <p>Scan the Transhipment ID</p>
     <input type="text" class="scan-input-hidden" id="trailerInput"
@@ -298,6 +332,7 @@
     <div class="trailer-error" id="trailerError"></div>
   </div>
 
+  <!-- STEP 4: Scanner screen -->
   <div class="screen" id="scannerScreen">
 
     <div class="user-bar">
@@ -367,15 +402,12 @@
     // ── TRAILER ID ABBREVIATION ──
     function abbreviateTrailer(id) {
       var parts = id.split('_');
-      // Format 1: ALT1_NXM2_uuid-with-dashes → ALT1_NXM2_ + last 6 chars
       if (parts.length === 3 && parts[2].indexOf('-') !== -1) {
         return parts[0] + '_' + parts[1] + '_' + parts[2].slice(-6);
       }
-      // Format 2: ALT1_NXM2_UNTRAC_ALT1_xxxxx → ALT1_NXM2_UNTRAC_ + last 6 chars
       if (parts.length >= 5 && parts[2] === 'UNTRAC') {
         return parts[0] + '_' + parts[1] + '_' + parts[2] + '_' + parts[parts.length - 1].slice(-6);
       }
-      // Fallback: show as-is
       return id;
     }
 
@@ -443,56 +475,7 @@
       promptIcon.style.justifyContent = 'center';
     }
 
-    function startMode(mode) {
-      currentMode = mode;
-      var label = document.getElementById('loginModeLabel');
-      if (mode === 'receive') {
-        label.textContent = '📥 Receive';
-        label.className = 'mode-label receive';
-      } else {
-        label.textContent = '📍 Dropzone';
-        label.className = 'mode-label dropzone';
-      }
-      showScreen('loginScreen');
-      badgeInput.value = '';
-      loginError.textContent = '';
-      badgeInput.focus();
-    }
-
-    function goHome() {
-      currentUser = '';
-      currentUserDisplay = '';
-      currentPallet = '';
-      currentTrailer = '';
-      scanCount = 0;
-      scanStep = 'pallet';
-      logEl.innerHTML = '';
-      scanCountEl.textContent = '0 scans';
-      if (statusTimer) clearTimeout(statusTimer);
-      resetPromptIcon();
-      showScreen('homeScreen');
-    }
-
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
-      autoFocus();
-    });
-    document.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn')) return;
-      autoFocus();
-    });
-    setInterval(autoFocus, 2000);
-
-    function autoFocus() {
-      var loginScreen = document.getElementById('loginScreen');
-      var trailerScreen = document.getElementById('trailerScreen');
-      var scannerScreen = document.getElementById('scannerScreen');
-
-      if (loginScreen.classList.contains('active')) badgeInput.focus();
-      else if (trailerScreen.classList.contains('active')) trailerInput.focus();
-      else if (scannerScreen.classList.contains('active')) scanInput.focus();
-    }
-
+    // ── BADGE SCAN (Step 1) ──
     badgeInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -508,19 +491,83 @@
         loginError.textContent = '';
         currentUser = badge;
         currentUserDisplay = lookupAlias(badge);
+
+        document.getElementById('homeUserName').textContent = currentUserDisplay;
         document.getElementById('userName').textContent = currentUserDisplay;
 
-        if (currentMode === 'receive') {
-          showScreen('trailerScreen');
-          trailerInput.value = '';
-          trailerError.textContent = '';
-          trailerInput.focus();
-        } else {
-          enterScanner();
-        }
+        showScreen('homeScreen');
       }
     });
 
+    // ── CHOOSE MODE (Step 2) ──
+    function startMode(mode) {
+      currentMode = mode;
+      currentTrailer = '';
+
+      if (mode === 'receive') {
+        showScreen('trailerScreen');
+        trailerInput.value = '';
+        trailerError.textContent = '';
+        trailerInput.focus();
+      } else {
+        enterScanner();
+      }
+    }
+
+    // ── HOME (logo button) — back to mode selection, stay logged in ──
+    function goHome() {
+      currentPallet = '';
+      currentTrailer = '';
+      scanCount = 0;
+      scanStep = 'pallet';
+      logEl.innerHTML = '';
+      scanCountEl.textContent = '0 scans';
+      if (statusTimer) clearTimeout(statusTimer);
+      resetPromptIcon();
+      showScreen('homeScreen');
+    }
+
+    // ── LOGOUT — back to badge scan ──
+    function logout() {
+      currentUser = '';
+      currentUserDisplay = '';
+      currentMode = '';
+      currentPallet = '';
+      currentTrailer = '';
+      scanCount = 0;
+      scanStep = 'pallet';
+      logEl.innerHTML = '';
+      scanCountEl.textContent = '0 scans';
+      if (statusTimer) clearTimeout(statusTimer);
+      resetPromptIcon();
+      showScreen('loginScreen');
+      badgeInput.value = '';
+      loginError.textContent = '';
+      badgeInput.focus();
+    }
+
+    // ── AUTO FOCUS ──
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn') || e.target.closest('.logout-btn')) return;
+      autoFocus();
+    });
+    document.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.logo-btn') || e.target.closest('.home-btn') || e.target.closest('.logout-btn')) return;
+      autoFocus();
+    });
+    setInterval(autoFocus, 2000);
+
+    function autoFocus() {
+      var loginScreen = document.getElementById('loginScreen');
+      var trailerScreen = document.getElementById('trailerScreen');
+      var scannerScreen = document.getElementById('scannerScreen');
+
+      if (loginScreen.classList.contains('active')) badgeInput.focus();
+      else if (trailerScreen.classList.contains('active')) trailerInput.focus();
+      else if (scannerScreen.classList.contains('active')) scanInput.focus();
+    }
+
+    // ── TRAILER SCAN (Step 3, Receive only) ──
     trailerInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -539,6 +586,7 @@
       }
     });
 
+    // ── ENTER SCANNER (Step 4) ──
     function enterScanner() {
       scanCount = 0;
       logEl.innerHTML = '';
@@ -562,6 +610,7 @@
       scanInput.focus();
     }
 
+    // ── SCAN HANDLER ──
     scanInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -594,7 +643,7 @@
       setInlineIcons(
         '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">' +
         '<span style="font-size:2rem;margin:0 10px;">➡️</span>' +
-        '<img src="images/warehouse.png" alt="Warehouse" style="width:60px;height:auto;">'
+        '<img src="images/warehouse.png" alt="Warehouse" style="width:50px;height:auto;">'
       );
       promptText.textContent = '';
       promptDetail.textContent = '';
