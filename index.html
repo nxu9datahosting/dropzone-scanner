@@ -286,19 +286,19 @@
 
     <div class="user-bar">
       <div>
-        <span>User: <span class="name" id="userName"></span></span>
-        <span id="trailerDisplay"></span>
+        <div>User: <span class="name" id="userName"></span></div>
+        <div id="trailerDisplay"></div>
       </div>
     </div>
 
     <div class="step-indicator" id="stepIndicator">
-      <div class="step" id="stepPallet">1. Scan Pallet</div>
-      <div class="step" id="stepDropzone">2. Scan Dropzone</div>
+      <div class="step" id="stepPallet">1. Pallet</div>
+      <div class="step" id="stepDropzone">2. Dropzone</div>
     </div>
 
     <div class="scan-prompt" id="scanPrompt">
       <div class="icon" id="promptIcon">📦</div>
-      <div class="instruction" id="promptText">Scan a pallet</div>
+      <div class="instruction" id="promptText"></div>
       <div class="detail" id="promptDetail"></div>
       <div class="captured" id="promptCaptured"></div>
     </div>
@@ -346,6 +346,21 @@
 
     function lookupAlias(badge) {
       return roster[badge] || badge;
+    }
+
+    // ── TRAILER ID ABBREVIATION ──
+    function abbreviateTrailer(id) {
+      var parts = id.split('_');
+      // Format 1: ALT1_NXM2_uuid-with-dashes → ALT1_NXM2_ + last 6 chars
+      if (parts.length === 3 && parts[2].indexOf('-') !== -1) {
+        return parts[0] + '_' + parts[1] + '_' + parts[2].slice(-6);
+      }
+      // Format 2: ALT1_NXM2_UNTRAC_ALT1_xxxxx → ALT1_NXM2_UNTRAC_ + last 6 chars
+      if (parts.length >= 5 && parts[2] === 'UNTRAC') {
+        return parts[0] + '_' + parts[1] + '_' + parts[2] + '_' + parts[parts.length - 1].slice(-6);
+      }
+      // Fallback: show as-is
+      return id;
     }
 
     var currentMode = '';
@@ -501,7 +516,7 @@
 
       if (currentMode === 'receive') {
         document.getElementById('trailerDisplay').innerHTML =
-          ' | Trailer: <span class="trailer-id">' + currentTrailer + '</span>';
+          'Trailer: <span class="trailer-id">' + abbreviateTrailer(currentTrailer) + '</span>';
         document.getElementById('stepIndicator').style.display = 'none';
         document.getElementById('logTitle').textContent = 'Receive Log';
         setReceivePalletStep();
@@ -546,7 +561,7 @@
 
     function setReceivePalletStep() {
       scanStep = 'pallet';
-      promptIcon.textContent = '📥';
+      promptIcon.innerHTML = '📥';
       promptText.textContent = '';
       promptDetail.textContent = '';
       promptCaptured.textContent = '';
@@ -580,10 +595,10 @@
     function setPalletStep() {
       scanStep = 'pallet';
       stepPallet.className = 'step active';
-      stepPallet.textContent = '1. Scan Pallet';
+      stepPallet.textContent = '1. Pallet';
       stepDropzone.className = 'step';
-      promptIcon.textContent = '📦';
-      promptText.textContent = 'Scan a pallet';
+      promptIcon.innerHTML = '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">';
+      promptText.textContent = '';
       promptDetail.textContent = '';
       promptCaptured.textContent = '';
       setStatus('Scan Pallet', 'ready');
@@ -593,7 +608,7 @@
       scanStep = 'dropzone';
       stepPallet.className = 'step done';
       stepDropzone.className = 'step active';
-      promptIcon.textContent = '📍';
+      promptIcon.innerHTML = '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">';
       promptText.textContent = '';
       promptDetail.textContent = 'LIFT · CHILLER · FREEZER · HRV';
       promptCaptured.textContent = '';
