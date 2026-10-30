@@ -87,18 +87,6 @@
       text-align: center;
     }
 
-    .scan-field {
-      width: 80%;
-      font-size: 1.3rem;
-      padding: 14px;
-      border: 3px solid #0f3460;
-      border-radius: 8px;
-      background: #16213e;
-      color: #fff;
-      text-align: center;
-      font-family: 'Noto Sans', Arial, sans-serif;
-    }
-
     .badge-img {
       width: 100px;
       height: auto;
@@ -278,8 +266,7 @@
     <div class="mode-label" id="loginModeLabel"></div>
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
     <p>Scan your badge</p>
-    <input type="text" class="scan-field" id="badgeInput" virtualkeyboardpolicy="manual"
-      placeholder="Scan badge..."
+    <input type="text" class="scan-input-hidden" id="badgeInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="login-error" id="loginError"></div>
   </div>
@@ -288,8 +275,7 @@
     <div class="mode-label receive">📥 Receive</div>
     <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
     <p>Scan the Transhipment ID</p>
-    <input type="text" class="scan-field" id="trailerInput" virtualkeyboardpolicy="manual"
-      placeholder="Scan trailer..."
+    <input type="text" class="scan-input-hidden" id="trailerInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="trailer-error" id="trailerError"></div>
   </div>
@@ -315,7 +301,7 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <input type="text" class="scan-input-hidden" id="scanInput" virtualkeyboardpolicy="manual"
+    <input type="text" class="scan-input-hidden" id="scanInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 
     <div class="status ready" id="status">Ready to scan</div>
@@ -328,19 +314,6 @@
   </div>
 
   <script>
-    // ── VIRTUAL KEYBOARD API ──
-    // Tell the browser we control the keyboard ourselves
-    if ('virtualKeyboard' in navigator) {
-      navigator.virtualKeyboard.overlaysContent = true;
-    }
-
-    // Hide keyboard whenever any input gets focus
-    document.addEventListener('focusin', function(e) {
-      if (e.target.tagName === 'INPUT' && 'virtualKeyboard' in navigator) {
-        navigator.virtualKeyboard.hide();
-      }
-    });
-
     var API_URL = 'https://96a2e921c35de1afbc46731313c6a0.05.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/25/workflows/909703d3b84546168fdd241a2442692f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xNbDYhH_H6KKuStrvucP-jMYK9xmJm69t6qvUzolmMw';
     var OFFLINE_KEY = 'dropzone_offline_queue';
     var VALID_DROPZONES = ['LIFT', 'CHILLER', 'FREEZER', 'HRV'];
