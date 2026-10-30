@@ -278,7 +278,7 @@
     <div class="mode-label" id="loginModeLabel"></div>
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
     <p>Scan your badge</p>
-    <input type="text" class="scan-field" id="badgeInput" inputmode="none" placeholder="Scan badge..."
+    <input type="text" class="scan-field" id="badgeInput" placeholder="Scan badge..."
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="login-error" id="loginError"></div>
   </div>
@@ -287,7 +287,7 @@
     <div class="mode-label receive">📥 Receive</div>
     <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
     <p>Scan the Transhipment ID</p>
-    <input type="text" class="scan-field" id="trailerInput" inputmode="none" placeholder="Scan trailer..."
+    <input type="text" class="scan-field" id="trailerInput" placeholder="Scan trailer..."
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="trailer-error" id="trailerError"></div>
   </div>
@@ -313,7 +313,7 @@
       <div class="captured" id="promptCaptured"></div>
     </div>
 
-    <input type="text" class="scan-input-hidden" id="scanInput" inputmode="none"
+    <input type="text" class="scan-input-hidden" id="scanInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 
     <div class="status ready" id="status">Ready to scan</div>
@@ -408,6 +408,19 @@
       document.getElementById(id).classList.add('active');
     }
 
+    // ── KEYBOARD DISMISS TRICK ──
+    // Focus → blur → re-focus dismisses the keyboard on most Android devices
+    // but keeps the input as the active target for the hardware scanner
+    function smartFocus(input) {
+      input.focus();
+      setTimeout(function() {
+        input.blur();
+        setTimeout(function() {
+          input.focus();
+        }, 50);
+      }, 50);
+    }
+
     function startMode(mode) {
       currentMode = mode;
       var label = document.getElementById('loginModeLabel');
@@ -421,7 +434,7 @@
       showScreen('loginScreen');
       badgeInput.value = '';
       loginError.textContent = '';
-      badgeInput.focus();
+      smartFocus(badgeInput);
     }
 
     function goHome() {
@@ -450,10 +463,15 @@
       var loginScreen = document.getElementById('loginScreen');
       var trailerScreen = document.getElementById('trailerScreen');
       var scannerScreen = document.getElementById('scannerScreen');
+      var target = null;
 
-      if (loginScreen.classList.contains('active')) badgeInput.focus();
-      else if (trailerScreen.classList.contains('active')) trailerInput.focus();
-      else if (scannerScreen.classList.contains('active')) scanInput.focus();
+      if (loginScreen.classList.contains('active')) target = badgeInput;
+      else if (trailerScreen.classList.contains('active')) target = trailerInput;
+      else if (scannerScreen.classList.contains('active')) target = scanInput;
+
+      if (target && document.activeElement !== target) {
+        smartFocus(target);
+      }
     }
 
     badgeInput.addEventListener('keydown', function(e) {
@@ -477,7 +495,7 @@
           showScreen('trailerScreen');
           trailerInput.value = '';
           trailerError.textContent = '';
-          trailerInput.focus();
+          smartFocus(trailerInput);
         } else {
           enterScanner();
         }
@@ -519,7 +537,7 @@
       }
 
       showScreen('scannerScreen');
-      scanInput.focus();
+      smartFocus(scanInput);
     }
 
     scanInput.addEventListener('keydown', function(e) {
