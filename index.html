@@ -73,6 +73,7 @@
       align-items: center;
       gap: 20px;
       position: relative;
+      padding-bottom: 60px;
     }
 
     .home-btn {
@@ -134,7 +135,7 @@
     }
 
     .badge-img {
-      width: 100px;
+      width: 150px;
       height: auto;
       margin-bottom: 8px;
     }
@@ -306,7 +307,7 @@
   <!-- STEP 1: Badge scan (first screen) -->
   <div class="screen login-screen active" id="loginScreen">
     <img src="images/badge.png" alt="Scan Badge" class="badge-img">
-    <p>Scan your badge</p>
+    <p style="font-size: 1.8rem;">Scan Badge</p>
     <input type="text" class="scan-input-hidden" id="badgeInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="login-error" id="loginError"></div>
@@ -451,7 +452,7 @@
     }
 
     function isValidPallet(value) {
-      return value.length >= 11 && !isDropzone(value);
+      return value.length === 11 && value.startsWith('PALLET_') && !isDropzone(value);
     }
 
     function showScreen(id) {
@@ -484,7 +485,7 @@
         if (!badge) return;
 
         if (!isValidBadge(badge)) {
-          loginError.textContent = '❌ Badge must be numbers only';
+          loginError.textContent = '❌ Invalid ID';
           return;
         }
 
@@ -516,6 +517,7 @@
 
     // ── HOME (logo button) — back to mode selection, stay logged in ──
     function goHome() {
+      if (!currentUser) return;
       currentPallet = '';
       currentTrailer = '';
       scanCount = 0;
@@ -628,11 +630,11 @@
 
     function handleReceiveScan(value) {
       if (isDropzone(value)) {
-        setStatus('❌ You are in Receive mode — just scan pallets', 'error');
+        setStatus('❌ Invalid Pallet ID', 'error');
         return;
       }
       if (!isValidPallet(value)) {
-        setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
+        setStatus('❌ Invalid Pallet', 'error');
         return;
       }
       submitScan(value, 'RECEIVE');
@@ -654,11 +656,11 @@
     function handleDropzoneScan(value) {
       if (scanStep === 'pallet') {
         if (isDropzone(value)) {
-          setStatus('❌ Scan a pallet first, not a dropzone', 'error');
+          setStatus('❌ No pallet selected for move', 'error');
           return;
         }
         if (!isValidPallet(value)) {
-          setStatus('❌ Invalid pallet — must be at least 11 characters', 'error');
+          setStatus('❌ Invalid Pallet', 'error');
           return;
         }
         currentPallet = value;
@@ -666,12 +668,11 @@
 
       } else if (scanStep === 'dropzone') {
         if (!isDropzone(value)) {
-          setStatus('❌ Not a valid dropzone — scan LIFT, CHILLER, FREEZER or HRV', 'error');
+          setStatus('❌ Invalid Dropzone', 'error');
           return;
         }
         submitScan(currentPallet, value);
         currentPallet = '';
-        setPalletStep();
       }
     }
 
@@ -755,6 +756,17 @@
 
       if (currentMode === 'receive') {
         setReceivePalletStep();
+      } else {
+        scanStep = 'pallet';
+        stepPallet.className = 'step active';
+        stepPallet.textContent = '1. Pallet';
+        stepDropzone.className = 'step';
+        setInlineIcons(
+          '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">'
+        );
+        promptText.textContent = '';
+        promptDetail.textContent = '';
+        promptCaptured.textContent = '';
       }
     }
 
