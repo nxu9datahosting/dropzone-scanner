@@ -304,7 +304,7 @@
     <input type="text" class="scan-input-hidden" id="scanInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 
-    <div class="status ready" id="status">Ready to scan</div>
+    <div class="status ready" id="status">Scan Pallet</div>
 
     <div class="log-header">
       <h2>Recent Scans</h2>
@@ -353,6 +353,7 @@
     var currentTrailer = '';
     var scanCount = 0;
     var scanStep = 'pallet';
+    var statusTimer = null;
 
     var badgeInput     = document.getElementById('badgeInput');
     var loginError     = document.getElementById('loginError');
@@ -421,6 +422,7 @@
       scanStep = 'pallet';
       logEl.innerHTML = '';
       scanCountEl.textContent = '0 scans';
+      if (statusTimer) clearTimeout(statusTimer);
       showScreen('homeScreen');
     }
 
@@ -498,10 +500,11 @@
       if (currentMode === 'receive') {
         document.getElementById('trailerDisplay').innerHTML =
           ' | Trailer: <span class="trailer-id">' + currentTrailer + '</span>';
-        stepDropzone.style.display = 'none';
+        document.getElementById('stepIndicator').style.display = 'none';
         setReceivePalletStep();
       } else {
         document.getElementById('trailerDisplay').innerHTML = '';
+        document.getElementById('stepIndicator').style.display = 'flex';
         stepDropzone.style.display = '';
         setPalletStep();
       }
@@ -539,12 +542,11 @@
 
     function setReceivePalletStep() {
       scanStep = 'pallet';
-      stepPallet.className = 'step active-receive';
-      stepPallet.textContent = 'Scan Pallet';
       promptIcon.textContent = '📥';
-      promptText.textContent = 'Scan a pallet to receive';
-      promptDetail.textContent = 'Trailer: ' + currentTrailer;
+      promptText.textContent = '';
+      promptDetail.textContent = '';
       promptCaptured.textContent = '';
+      setStatus('Scan Pallet', 'ready');
     }
 
     function handleDropzoneScan(value) {
@@ -580,6 +582,7 @@
       promptText.textContent = 'Scan a pallet';
       promptDetail.textContent = '';
       promptCaptured.textContent = '';
+      setStatus('Scan Pallet', 'ready');
     }
 
     function setDropzoneStep() {
@@ -589,7 +592,8 @@
       promptIcon.textContent = '📍';
       promptText.textContent = 'Now scan the dropzone';
       promptDetail.textContent = 'LIFT · CHILLER · FREEZER · HRV';
-      promptCaptured.textContent = 'Pallet: ' + currentPallet;
+      promptCaptured.textContent = '';
+      setStatus(currentPallet, 'offline');
     }
 
     function submitScan(palletId, dropzone) {
@@ -623,6 +627,10 @@
         if (r.ok || r.status === 202) {
           updateLogEntry(palletId, timestamp, 'sent');
           setStatus('✓ ' + palletId + ' → ' + dropzone, 'success');
+          if (statusTimer) clearTimeout(statusTimer);
+          statusTimer = setTimeout(function() {
+            setStatus('Scan Pallet', 'ready');
+          }, 3000);
         } else {
           throw new Error('HTTP ' + r.status);
         }
@@ -631,6 +639,10 @@
         queueOffline(entry);
         updateLogEntry(palletId, timestamp, 'failed');
         setStatus('⚠ Queued offline: ' + palletId, 'offline');
+        if (statusTimer) clearTimeout(statusTimer);
+        statusTimer = setTimeout(function() {
+          setStatus('Scan Pallet', 'ready');
+        }, 3000);
       });
 
       if (currentMode === 'receive') {
