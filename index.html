@@ -137,6 +137,12 @@
     }
 
     .badge-img {
+      width: 225px;
+      height: auto;
+      margin-bottom: 8px;
+    }
+
+    .truck-img {
       width: 150px;
       height: auto;
       margin-bottom: 8px;
@@ -166,7 +172,7 @@
 
     .trailer-screen p {
       color: #fff;
-      font-size: 0.9rem;
+      font-size: 1.8rem;
       text-align: center;
     }
 
@@ -328,8 +334,8 @@
   <!-- STEP 3 (Receive only): Scan trailer -->
   <div class="screen trailer-screen" id="trailerScreen">
     <div class="mode-label">📥 Receive</div>
-    <img src="images/truck.png" alt="Scan Trailer" class="badge-img">
-    <p>Scan the Transhipment ID</p>
+    <img src="images/truck.png" alt="Scan Trailer" class="truck-img">
+    <p>Scan Transhipment ID</p>
     <input type="text" class="scan-input-hidden" id="trailerInput"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="trailer-error" id="trailerError"></div>
@@ -454,7 +460,7 @@
     }
 
     function isValidPallet(value) {
-      return value.length === 11 && value.startsWith('PALLET_') && !isDropzone(value);
+      return value.length >= 11 && value.startsWith('PALLET_') && !isDropzone(value);
     }
 
     function isValidTrailer(value) {
