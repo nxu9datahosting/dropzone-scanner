@@ -7,10 +7,25 @@
   <title>Inbound Receive</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Amazon Ember Display';
+      src: url('fonts/Amazon Ember Display Light.ttf') format('truetype');
+      font-weight: 300;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Amazon Ember Display';
+      src: url('fonts/Amazon Ember Display Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      font-family: 'Noto Sans', Arial, sans-serif;
+      font-family: 'Amazon Ember Display', 'Noto Sans', Arial, sans-serif;
+      font-weight: 300;
       background: #1a1a2e;
       color: #fff;
       height: 100%;
@@ -35,6 +50,7 @@
       font-size: 1.2rem;
       color: #e0e0e0;
       margin-left: 10%;
+      font-weight: 500;
     }
 
     .logo-btn {
@@ -197,7 +213,7 @@
     .status {
       text-align: center;
       font-size: 1.1rem;
-      font-weight: bold;
+      font-weight: 500;
       padding: 10px;
       border-radius: 6px;
       margin-bottom: 10px;
@@ -297,7 +313,7 @@
     </div>
 
     <div class="scan-prompt" id="scanPrompt">
-      <div class="icon" id="promptIcon">📦</div>
+      <div class="icon" id="promptIcon"></div>
       <div class="instruction" id="promptText"></div>
       <div class="detail" id="promptDetail"></div>
       <div class="captured" id="promptCaptured"></div>
@@ -414,6 +430,19 @@
       document.getElementById(id).classList.add('active');
     }
 
+    function resetPromptIcon() {
+      promptIcon.style.display = '';
+      promptIcon.style.alignItems = '';
+      promptIcon.style.justifyContent = '';
+    }
+
+    function setInlineIcons(html) {
+      promptIcon.innerHTML = html;
+      promptIcon.style.display = 'flex';
+      promptIcon.style.alignItems = 'center';
+      promptIcon.style.justifyContent = 'center';
+    }
+
     function startMode(mode) {
       currentMode = mode;
       var label = document.getElementById('loginModeLabel');
@@ -440,6 +469,7 @@
       logEl.innerHTML = '';
       scanCountEl.textContent = '0 scans';
       if (statusTimer) clearTimeout(statusTimer);
+      resetPromptIcon();
       showScreen('homeScreen');
     }
 
@@ -561,7 +591,11 @@
 
     function setReceivePalletStep() {
       scanStep = 'pallet';
-      promptIcon.innerHTML = '📥';
+      setInlineIcons(
+        '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">' +
+        '<span style="font-size:2rem;margin:0 10px;">➡️</span>' +
+        '<img src="images/warehouse.png" alt="Warehouse" style="width:60px;height:auto;">'
+      );
       promptText.textContent = '';
       promptDetail.textContent = '';
       promptCaptured.textContent = '';
@@ -597,7 +631,9 @@
       stepPallet.className = 'step active';
       stepPallet.textContent = '1. Pallet';
       stepDropzone.className = 'step';
-      promptIcon.innerHTML = '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">';
+      setInlineIcons(
+        '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">'
+      );
       promptText.textContent = '';
       promptDetail.textContent = '';
       promptCaptured.textContent = '';
@@ -608,7 +644,11 @@
       scanStep = 'dropzone';
       stepPallet.className = 'step done';
       stepDropzone.className = 'step active';
-      promptIcon.innerHTML = '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">';
+      setInlineIcons(
+        '<img src="images/pallet.png" alt="Pallet" style="width:60px;height:auto;">' +
+        '<span style="font-size:2rem;margin:0 10px;">➡️</span>' +
+        '<span style="font-size:2.5rem;">📍</span>'
+      );
       promptText.textContent = '';
       promptDetail.textContent = 'LIFT · CHILLER · FREEZER · HRV';
       promptCaptured.textContent = '';
